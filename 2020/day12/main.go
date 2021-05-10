@@ -12,9 +12,17 @@ import (
 )
 
 func main() {
-	// PartA inputs
+	part := "B"
 
+	// PartA inputs
+	// waypoint := []int{0, 0} // {N, E}
+	////
 	// PartB inputs
+	waypoint := []int{1, 10} // {N, E}
+	////
+	north := 0
+	east := 0
+	facing := "E"
 
 	logsActive := false
 	fmt.Println("logsActive ", logsActive)
@@ -30,17 +38,22 @@ func main() {
 		dist = append(dist, distance)
 	}
 
-	north := 0
-	east := 0
-	facing := "E"
-
 	for i := range dir {
-		logging("dir[i]", dir[i], false)
-		logging("dist[i]", dist[i], false)
-		logging("north", north, false)
-		logging("east", east, false)
-		logging("facing", facing, false)
-		north, east, facing = navSwitch(dir[i], dist[i], north, east, facing)
+		logging("---------", "", true)
+		logging("dir[i]", dir[i], true)
+		logging("dist[i]", dist[i], true)
+		logging("north", north, true)
+		logging("east", east, true)
+		if part == "A" {
+			logging("facing", facing, true)
+			north, east, facing = navSwitch(dir[i], dist[i], north, east, facing)
+		} else if part == "B" {
+			logging("waypoint", waypoint, true)
+			north, east, waypoint = navSwitchWaypoint(dir[i], dist[i], north, east, waypoint)
+			logging("new_waypoint", waypoint, true)
+			logging("new_north", north, true)
+			logging("new_east", east, true)
+		}
 	}
 
 	manhattan_dist := Abs(north) + Abs(east)
@@ -67,6 +80,77 @@ func navSwitch(nav string, value int, north int, east int, facing string) (int, 
 	return north, east, facing
 }
 
+func navSwitchWaypoint(nav string, value int, north int, east int, waypoint []int) (int, int, []int) {
+	switch nav {
+	case "N":
+		waypoint[0] = waypoint[0] + value
+	case "S":
+		waypoint[0] = waypoint[0] - value
+	case "E":
+		waypoint[1] = waypoint[1] + value
+	case "W":
+		waypoint[1] = waypoint[1] - value
+	case "L":
+		waypoint = compassWaypoint(waypoint, -value)
+	case "R":
+		waypoint = compassWaypoint(waypoint, value)
+	case "F":
+		north = north + waypoint[0]*value
+		east = east + waypoint[1]*value
+	}
+	return north, east, waypoint
+}
+
+func compassWaypoint(waypoint []int, degrees int) []int {
+	_, change := divMod((360+degrees)/90, 4)
+	if change == 0 {
+		return waypoint
+	}
+	compass := []string{"N", "E", "S", "W"}
+	compass_mag := []int{1, 1, -1, -1}
+	var direction string
+	var new_waypoint []int
+	var compass_index_n int
+	var compass_index_e int
+
+	for i := range compass {
+		if waypoint[0] >= 0 {
+			direction = "N"
+		} else {
+			direction = "S"
+		}
+		if compass[i] == direction {
+			compass_index_n = i
+			break
+		}
+	}
+	for i := range compass {
+		if waypoint[1] >= 0 {
+			direction = "E"
+		} else {
+			direction = "W"
+		}
+		if compass[i] == direction {
+			compass_index_e = i
+			break
+		}
+	}
+
+	_, compass_index_n = divMod(compass_index_n+change, 4)
+	_, compass_index_e = divMod(compass_index_e+change, 4)
+
+	_, odd_even := divMod(change, 2)
+	if odd_even == 0 {
+		new_waypoint = append(new_waypoint, compass_mag[compass_index_n]*Abs(waypoint[0]))
+		new_waypoint = append(new_waypoint, compass_mag[compass_index_e]*Abs(waypoint[1]))
+	} else {
+		new_waypoint = append(new_waypoint, compass_mag[compass_index_e]*Abs(waypoint[1]))
+		new_waypoint = append(new_waypoint, compass_mag[compass_index_n]*Abs(waypoint[0]))
+	}
+
+	return new_waypoint
+}
+
 func compass(facing string, degrees int) (new_facing string) {
 	compass := []string{"N", "E", "S", "W"}
 	var compass_index int
@@ -76,7 +160,7 @@ func compass(facing string, degrees int) (new_facing string) {
 			break
 		}
 	}
-	_, change := divMod(360+degrees/90, 4)
+	_, change := divMod((360+degrees)/90, 4)
 	_, new_index := divMod(compass_index+change, 4)
 	logging("compass_index", compass_index, true)
 	logging("change", change, true)
