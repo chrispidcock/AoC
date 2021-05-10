@@ -19,8 +19,8 @@ func main() {
 	logsActive := false
 	fmt.Println("logsActive ", logsActive)
 	defer timeTrack(time.Now(), "day12")
-	input, _ := readLines("nav-i-part-a-test.txt")
-	// input, _ := readLines("nav-instructions.txt")
+	// input, _ := readLines("nav-i-part-a-test.txt")
+	input, _ := readLines("nav-instructions.txt")
 
 	var dir []string
 	var dist []int
@@ -33,9 +33,38 @@ func main() {
 	north := 0
 	east := 0
 	facing := "E"
-	manhattan_dist := Abs(north) + Abs(east)
 
+	for i := range dir {
+		logging("dir[i]", dir[i], false)
+		logging("dist[i]", dist[i], false)
+		logging("north", north, false)
+		logging("east", east, false)
+		logging("facing", facing, false)
+		north, east, facing = navSwitch(dir[i], dist[i], north, east, facing)
+	}
+
+	manhattan_dist := Abs(north) + Abs(east)
 	fmt.Println("manhattan_dist ", manhattan_dist)
+}
+
+func navSwitch(nav string, value int, north int, east int, facing string) (int, int, string) {
+	switch nav {
+	case "N":
+		north = north + value
+	case "S":
+		north = north - value
+	case "E":
+		east = east + value
+	case "W":
+		east = east - value
+	case "L":
+		facing = compass(facing, -value)
+	case "R":
+		facing = compass(facing, value)
+	case "F":
+		north, east, facing = navSwitch(facing, value, north, east, facing)
+	}
+	return north, east, facing
 }
 
 func compass(facing string, degrees int) (new_facing string) {
@@ -47,8 +76,11 @@ func compass(facing string, degrees int) (new_facing string) {
 			break
 		}
 	}
-	_, change := divMod(degrees/90, 360)
+	_, change := divMod(360+degrees/90, 4)
 	_, new_index := divMod(compass_index+change, 4)
+	logging("compass_index", compass_index, true)
+	logging("change", change, true)
+	logging("new_index", new_index, true)
 	return compass[new_index]
 }
 
