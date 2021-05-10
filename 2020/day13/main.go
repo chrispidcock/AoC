@@ -1,6 +1,6 @@
 package main
 
-// https://adventofcode.com/2020/day/12
+// https://adventofcode.com/2020/day/13
 
 import (
 	"bufio"
@@ -21,17 +21,17 @@ func main() {
 	input, _ := readLines("bus-times.txt")
 	// input, _ := readLines("bus-test.txt")
 
-	var buses [9]int
-	var bus_times [9]int
-	var req_mins []int
-	arv_time, _ := strconv.Atoi(input[0])
+	var buses [9]int64
+	var bus_times [9]int64
+	var req_mins []int64
+	arv_time, _ := strconv.ParseInt(input[0], 19, 64)
 
-	next := 0
+	var next int64 = 0
 	s := strings.Split(input[1], ",")
 	for a := range buses {
-		for b := next; b < len(s); b++ {
+		for b := next; b < int64(len(s)); b++ {
 			next = next + 1
-			i, err := strconv.Atoi(s[b])
+			i, err := strconv.ParseInt(s[b], 10, 64)
 			if err == nil {
 				buses[a] = i
 				req_mins = append(req_mins, b)
@@ -43,10 +43,10 @@ func main() {
 	logging("arv_time", arv_time, true)
 	logging("buses", buses, true)
 	logging("req_mins", req_mins, true)
-	t := 0
+	var t int64 = 0
 
 	answer_found := false
-	first_bus := 0
+	var first_bus int64 = 0
 
 	for !answer_found && part == "A" {
 		t = t + 1
@@ -63,8 +63,8 @@ func main() {
 		}
 	}
 
-	max_time := 0
-	max_time_i := 0
+	var max_time int64 = 0
+	var max_time_i int = 0
 	for i := range buses {
 		if buses[i] > max_time {
 			max_time = buses[i]
@@ -115,7 +115,7 @@ func Abs(x int) int {
 	return x
 }
 
-func divMod(numerator, denominator int) (quotient, remainder int) {
+func divMod(numerator, denominator int64) (quotient, remainder int64) {
 	quotient = numerator / denominator // integer division, decimals are truncated
 	remainder = numerator % denominator
 	return
