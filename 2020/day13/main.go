@@ -13,14 +13,7 @@ import (
 )
 
 func main() {
-	// part := "A"
-
-	// PartA inputs
-
-	////
-	// PartB inputs
-
-	////
+	part := "B"
 
 	logsActive := false
 	fmt.Println("logsActive ", logsActive)
@@ -30,6 +23,7 @@ func main() {
 
 	var buses [9]int
 	var bus_times [9]int
+	var req_mins []int
 	arv_time, _ := strconv.Atoi(input[0])
 
 	next := 0
@@ -40,7 +34,7 @@ func main() {
 			i, err := strconv.Atoi(s[b])
 			if err == nil {
 				buses[a] = i
-				bus_times[a] = i
+				req_mins = append(req_mins, b)
 				break
 			}
 		}
@@ -48,28 +42,58 @@ func main() {
 
 	logging("arv_time", arv_time, true)
 	logging("buses", buses, true)
+	logging("req_mins", req_mins, true)
 	t := 0
-	// th := 0
-	// tm := 0
+
+	answer_found := false
 	first_bus := 0
 
-	for first_bus == 0 {
+	for !answer_found && part == "A" {
 		t = t + 1
-		// th, tm := divMod(t, 60)
 		for b := range buses {
 			_, mod := divMod(t, buses[b])
 			if mod == 0 {
 				bus_times[b] = t
 				if t > arv_time {
 					first_bus = buses[b]
+					answer_found = true
 					break
 				}
 			}
 		}
+	}
+
+	max_time := 0
+	max_time_i := 0
+	for i := range buses {
+		if buses[i] > max_time {
+			max_time = buses[i]
+			max_time_i = i
+		}
+	}
+	logging("max_time", max_time, true)
+	logging("max_time_i", max_time_i, true)
+
+	for !answer_found && part == "B" {
 		logging("bus_times", bus_times, false)
+		bus_times[max_time_i] = bus_times[max_time_i] + buses[max_time_i]
+
+		for b, t := range req_mins {
+			compare := bus_times[max_time_i] - (req_mins[max_time_i] - t)
+			_, mod := divMod(compare, buses[b])
+			if mod == 0 {
+				bus_times[b] = compare
+			} else {
+				break
+			}
+			if b == len(buses)-1 {
+				answer_found = true
+			}
+		}
 	}
 
 	// Part1 answer
+	logging("---Part1 answer---", "", true)
 	logging("bus_times", bus_times, true)
 	logging("first_bus", first_bus, true)
 	logging("arv_time", arv_time, true)
@@ -78,6 +102,9 @@ func main() {
 	part1_answer := first_bus * wait_time
 	logging("part1_answer", part1_answer, true)
 
+	// Part2 Answer
+	logging("---Part2 answer---", "", true)
+	logging("part2_answer", bus_times[0], true)
 }
 
 // Abs returns the absolute value of x.
