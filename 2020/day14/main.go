@@ -19,12 +19,12 @@ func main() {
 	logsActive := false
 	fmt.Println("logsActive ", logsActive)
 	defer timeTrack(time.Now(), "day14")
-	// input, _ := readLines("initialization.txt")
-	input, _ := readLines("initialization-test.txt")
+	input, _ := readLines("initialization.txt")
+	// input, _ := readLines("initialization-test.txt")
 
 	var masks []string
-	var mem_init [][]int
-	var mem_init_val [][]int
+	var mem_init [][]int64
+	var mem_init_val [][]int64
 	var mem_mask []int
 
 	for i := range input {
@@ -32,32 +32,61 @@ func main() {
 		if err == nil {
 			masks = append(masks, s)
 			mem_mask = append(mem_mask, len(masks)-1)
-			mem_init = append(mem_init, make([]int, 0))
-			mem_init_val = append(mem_init_val, make([]int, 0))
+			mem_init = append(mem_init, make([]int64, 0))
+			mem_init_val = append(mem_init_val, make([]int64, 0))
 
 		} else {
 			val, _ := getMemory(input[i])
-			mem_init[mem_mask[len(mem_mask)-1]] = append(mem_init[mem_mask[len(mem_mask)-1]], val)
+			mem_init[mem_mask[len(mem_mask)-1]] = append(mem_init[mem_mask[len(mem_mask)-1]], int64(val))
 			val, _ = getMemVal(input[i])
-			mem_init_val[mem_mask[len(mem_mask)-1]] = append(mem_init_val[mem_mask[len(mem_mask)-1]], val)
+			mem_init_val[mem_mask[len(mem_mask)-1]] = append(mem_init_val[mem_mask[len(mem_mask)-1]], int64(val))
 		}
 	}
 
-	fmt.Println(masks)
-	fmt.Println(mem_init)
-	fmt.Println(mem_init_val)
-	fmt.Println(mem_mask)
+	memory := make(map[int64]int64)
 
-	// var memory []int
-	// var memory_values []int
+	for mask_i := range masks {
+		logging("masks[mask_i]", masks[mask_i], false)
+		for i := range mem_init[mask_i] {
+			logging("mem_init_val[mask_i][i]", mem_init_val[mask_i][i], false)
+			val := fmt.Sprintf("%036b", mem_init_val[mask_i][i])
+			logging("val", val, false)
+			masked_val := applyMask(masks[mask_i], val)
+			logging("masked_val", masked_val, false)
+			v_int, _ := strconv.ParseInt(masked_val, 2, 64)
+			logging("v_int", v_int, false)
+			memory[mem_init[mask_i][i]] = v_int
+		}
+	}
 
-	// s := fmt.Sprintf("%036b", 123)
-	// i, err := strconv.ParseInt(s, 2, 64)
+	logging("memory", memory, true)
+	mem_val_sum := mapSum(memory)
+	logging("mem_val_sum", mem_val_sum, true)
+}
 
+func applyMask(mask string, val string) string {
+	val_rune := []rune(val)
+	mask_rune := []rune(mask)
+	for i := range mask_rune {
+		if mask_rune[i] != 'X' {
+			val_rune[i] = mask_rune[i]
+		}
+	}
+	return string(val_rune)
+}
+
+func mapSum(m map[int64]int64) int64 {
+	var m_sum int64 = 0
+	for i := range m {
+		if m[i] != 0 {
+			m_sum = m_sum + m[i]
+		}
+	}
+	return m_sum
 }
 
 func getMask(s string) (string, error) {
-	re := regexp.MustCompile(`mask = ([X10]+?)`)
+	re := regexp.MustCompile(`mask = (.{36})`)
 	match := re.FindStringSubmatch(s)
 	if len(match) > 1 {
 		return match[1], nil
@@ -65,13 +94,13 @@ func getMask(s string) (string, error) {
 	return s, errors.New("error")
 }
 
-func getMemory(s string) (int, error) {
-	re := regexp.MustCompile(`(?:mem[)([0-9]+?)(?:])`)
+func getMemory(s string) (int64, error) {
+	re := regexp.MustCompile(`mem\[(.*)\]`)
 	match := re.FindStringSubmatch(s)
 	if len(match) > 1 {
 		v, err := strconv.Atoi(match[1])
 		if err == nil {
-			return v, nil
+			return int64(v), nil
 		} else {
 			fmt.Println(err)
 		}
@@ -79,13 +108,13 @@ func getMemory(s string) (int, error) {
 	return 0, errors.New("error")
 }
 
-func getMemVal(s string) (int, error) {
-	re := regexp.MustCompile(`(?:] = )([0-9]+?)$`)
+func getMemVal(s string) (int64, error) {
+	re := regexp.MustCompile(`\] = ([0-9]*)$`)
 	match := re.FindStringSubmatch(s)
 	if len(match) > 1 {
 		v, err := strconv.Atoi(match[1])
 		if err == nil {
-			return v, nil
+			return int64(v), nil
 		} else {
 			fmt.Println(err)
 		}
