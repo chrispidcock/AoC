@@ -65,6 +65,7 @@ func main() {
 
 	var max_time int64 = 0
 	var max_time_i int = 0
+	var multiplier int64 = 1
 	for i := range buses {
 		if buses[i] > max_time {
 			max_time = buses[i]
@@ -75,13 +76,16 @@ func main() {
 	logging("max_time_i", max_time_i, true)
 
 	for !answer_found && part == "B" {
-		logging("bus_times", bus_times, false)
-		bus_times[max_time_i] = bus_times[max_time_i] + buses[max_time_i]
+		bus_times[max_time_i] = bus_times[max_time_i] + buses[max_time_i]*multiplier
 
 		for b, t := range req_mins {
 			compare := bus_times[max_time_i] - (req_mins[max_time_i] - t)
 			_, mod := divMod(compare, buses[b])
 			if mod == 0 {
+				if bus_times[b] == 0 {
+					bus_times[b] = compare
+					multiplier = multiplier * buses[b]
+				}
 				bus_times[b] = compare
 			} else {
 				break
