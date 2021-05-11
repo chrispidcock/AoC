@@ -14,13 +14,14 @@ import (
 )
 
 func main() {
-	// part := "A"
+	part := "B"
 
 	logsActive := false
 	fmt.Println("logsActive ", logsActive)
 	defer timeTrack(time.Now(), "day14")
 	input, _ := readLines("initialization.txt")
-	// input, _ := readLines("initialization-test.txt")
+	// input, _ := readLines("initialization-test-p1.txt")
+	// input, _ := readLines("initialization-test-p2.txt")
 
 	var masks []string
 	var mem_init [][]int64
@@ -42,26 +43,33 @@ func main() {
 			mem_init_val[mem_mask[len(mem_mask)-1]] = append(mem_init_val[mem_mask[len(mem_mask)-1]], int64(val))
 		}
 	}
-
+	logging("masks", masks, false)
+	logging("mem_init", mem_init, false)
+	logging("mem_init_val", mem_init_val, false)
 	memory := make(map[int64]int64)
 
-	for mask_i := range masks {
-		logging("masks[mask_i]", masks[mask_i], false)
-		for i := range mem_init[mask_i] {
-			logging("mem_init_val[mask_i][i]", mem_init_val[mask_i][i], false)
-			val := fmt.Sprintf("%036b", mem_init_val[mask_i][i])
-			logging("val", val, false)
-			masked_val := applyMask(masks[mask_i], val)
-			logging("masked_val", masked_val, false)
-			v_int, _ := strconv.ParseInt(masked_val, 2, 64)
-			logging("v_int", v_int, false)
-			memory[mem_init[mask_i][i]] = v_int
+	for j := range masks {
+		fmt.Println("------------ ", masks[j], " == ", j)
+		for i := range mem_init[j] {
+			if part == "A" {
+				logging("mem_init_val[j][i]", mem_init_val[j][i], false)
+				val := fmt.Sprintf("%036b", mem_init_val[j][i])
+				masked_val := applyMask(masks[j], val)
+				v_int, _ := strconv.ParseInt(masked_val, 2, 64)
+				memory[mem_init[j][i]] = v_int
+			}
+			if part == "B" {
+				init_mem := fmt.Sprintf("%036b", mem_init[j][i])
+				mem_slice := applyMaskMem(masks[j], init_mem)
+				for mem := range mem_slice {
+					memory[mem_slice[mem]] = mem_init_val[j][i]
+				}
+			}
 		}
 	}
 
-	// logging("memory", memory, true)
 	mem_val_sum := mapSum(memory)
-	logging("---Part 1 Answer---", "", true)
+	logging("---Answer---", "", true)
 	logging("mem_val_sum", mem_val_sum, true)
 }
 
@@ -76,37 +84,48 @@ func applyMask(mask string, val string) string {
 	return string(val_rune)
 }
 
-func applyMaskMem(mask string, val string) []int64 {
-	val_rune := []rune(val)
-	mask_rune := []rune(mask)
-	bit_len := -1
+func applyMaskMem(m string, v string) []int64 {
+	val_rune := []rune(v)
+	mask_rune := []rune(m)
+	var bit_len int = 0
 	var masked_mem []int64
 
 	for i := range mask_rune {
-		if mask_rune[i] != 'X' {
+		if mask_rune[i] != '0' {
 			val_rune[i] = mask_rune[i]
-		} else {
+		}
+		if mask_rune[i] == 'X' {
 			bit_len = bit_len + 1
 		}
 	}
 
-	for i := 0; i < 2^bit_len; i++ {
+	for i := 0; i <= pow(2, bit_len)+1; i++ {
 		val_rune_copy := []rune(string(val_rune))
-		bit := fmt.Sprintf("%0%vb", i, 2^bit_len)
-		bit_rune := rune(bit)
-		for bit := range bit_rune {
+		bits := fmt.Sprintf("%036b", i)
+		bit_rune := []rune(bits)
+		bit_correct := []rune(string(bit_rune[(len(bit_rune) - bit_len):]))
+		for bit := range bit_correct {
+			logging("bit", string(bit_correct[bit]), false)
 			for j := range val_rune_copy {
 				if val_rune_copy[j] == 'X' {
-					val_rune_copy[j] = bit_rune[bit]
+					val_rune_copy[j] = bit_correct[bit]
 					break
 				}
 			}
 		}
 
-		v_int, _ := strconv.ParseInt(masked_val, 2, 64)
+		v_int, _ := strconv.ParseInt(string(val_rune_copy), 2, 64)
 		masked_mem = append(masked_mem, v_int)
 	}
 	return masked_mem
+}
+
+func pow(x int, y int) int {
+	var result int = 1
+	for i := 1; i <= y; i++ {
+		result = result * i
+	}
+	return result
 }
 
 func mapSum(m map[int64]int64) int64 {
