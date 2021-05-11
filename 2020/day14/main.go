@@ -59,8 +59,9 @@ func main() {
 		}
 	}
 
-	logging("memory", memory, true)
+	// logging("memory", memory, true)
 	mem_val_sum := mapSum(memory)
+	logging("---Part 1 Answer---", "", true)
 	logging("mem_val_sum", mem_val_sum, true)
 }
 
@@ -73,6 +74,39 @@ func applyMask(mask string, val string) string {
 		}
 	}
 	return string(val_rune)
+}
+
+func applyMaskMem(mask string, val string) []int64 {
+	val_rune := []rune(val)
+	mask_rune := []rune(mask)
+	bit_len := -1
+	var masked_mem []int64
+
+	for i := range mask_rune {
+		if mask_rune[i] != 'X' {
+			val_rune[i] = mask_rune[i]
+		} else {
+			bit_len = bit_len + 1
+		}
+	}
+
+	for i := 0; i < 2^bit_len; i++ {
+		val_rune_copy := []rune(string(val_rune))
+		bit := fmt.Sprintf("%0%vb", i, 2^bit_len)
+		bit_rune := rune(bit)
+		for bit := range bit_rune {
+			for j := range val_rune_copy {
+				if val_rune_copy[j] == 'X' {
+					val_rune_copy[j] = bit_rune[bit]
+					break
+				}
+			}
+		}
+
+		v_int, _ := strconv.ParseInt(masked_val, 2, 64)
+		masked_mem = append(masked_mem, v_int)
+	}
+	return masked_mem
 }
 
 func mapSum(m map[int64]int64) int64 {
