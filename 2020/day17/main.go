@@ -91,7 +91,7 @@ func main() {
 	}
 }
 
-// countActiveN counts the number of active neibours to a co-ord
+// countActiveN counts the number of active neighbours to a co-ord
 func countActiveN(ss *[10000]coord, x int, y int, z int, w int, r int) int {
 	n := 0
 	for i := range ss {
