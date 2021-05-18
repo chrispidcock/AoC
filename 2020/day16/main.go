@@ -73,108 +73,125 @@ func main() {
 		prev_row = input[row]
 	}
 
-	logging("fieldRules", fieldRules, true)
-
 	invalid_sum := 0
 	tickets := len(other_tickets)
-
-	for i := 0; i < tickets; i++ {
-		for j := range other_tickets[i] {
+	idx := -1
+	for idx < tickets-1 {
+		idx = idx + 1
+		for j := range other_tickets[idx] {
 			valid := false
-			v := other_tickets[i][j]
+			v := other_tickets[idx][j]
 			for f := range fieldRules {
 				if (v >= fieldRules[f].Min1 && v <= fieldRules[f].Max1) || (v >= fieldRules[f].Min2 && v <= fieldRules[f].Max2) {
 					valid = true
+					break
 				}
 			}
 			if !valid {
 				invalid_sum = invalid_sum + v
 				if part == "B" {
-					other_tickets = removeIndex(other_tickets, i)
-					i = i - 1
-					tickets = tickets - 1
+					other_tickets = removeIndex(other_tickets, idx)
+					tickets = len(other_tickets)
+					idx = idx - 1
 				}
 			}
 		}
 	}
 
-	logging("---Answer Part1---", "", true)
+	logging("\n---Answer Part1---", "", true)
 	logging("invalid_sum", invalid_sum, true)
+	logging("\n--- Part2 Working---", "", true)
 
-	var ticket_invalid_rules [][]int
+	var invalid_rule_idx [][]int
 
 	for rule := range fieldRules {
 		logging("rule", rule, false)
-		ticket_invalid_rules = append(ticket_invalid_rules, make([]int, 0))
+		invalid_rule_idx = append(invalid_rule_idx, make([]int, 0, 20))
 	}
 
 	// find invalid rules for each unknown ticket field in other_tickets
-	for i := 0; i < tickets; i++ {
+	for i := range other_tickets {
 		for j := range other_tickets[i] {
 			v := other_tickets[i][j]
 			for f := range fieldRules {
 				if (v >= fieldRules[f].Min1 && v <= fieldRules[f].Max1) || (v >= fieldRules[f].Min2 && v <= fieldRules[f].Max2) {
 					continue
 				} else {
-					num_index := findNum(ticket_invalid_rules[f], j)
+					num_index := findNum(invalid_rule_idx[f], j)
 					if num_index == -1 {
-						ticket_invalid_rules[f] = append(ticket_invalid_rules[f], j)
+						invalid_rule_idx[f] = append(invalid_rule_idx[f], j)
 					}
 				}
 			}
 		}
 	}
 
-	logging("ticket_invalid_rules", ticket_invalid_rules, true)
-
 	// order the ticket fields by the number of invalid field rules
+	// invalid_rule_idx [rule index][invalid field indexes]
 	var desc_len_order []int
-	for j := len(fieldRules); j >= 0; j-- {
-		for i := range ticket_invalid_rules {
-			if len(ticket_invalid_rules[i]) == j {
+	for j := len(fieldRules) - 1; j >= 0; j-- {
+		for i := range invalid_rule_idx {
+			if len(invalid_rule_idx[i]) == j {
 				desc_len_order = append(desc_len_order, i)
 				break
 			}
 		}
 	}
 
-	logging("desc_len_order", desc_len_order, true)
-
-	for _, v := range desc_len_order {
-		// iterate over ticket_invalid_rules to find rule index with no match
-		for j := range fieldRules {
-			if fieldRules[j].TicketIndex != -1 {
-				continue
-			}
-			index := findNum(ticket_invalid_rules[v], j)
-			if index == -1 {
-				fmt.Println("VALID ", j)
-				fieldRules[j].TicketIndex = v
-				break
+	for i := len(desc_len_order) - 1; i >= 0; i-- {
+		for j := range desc_len_order {
+			if len(invalid_rule_idx[j]) == i {
+				fmt.Println("Rule invalid fields:\t", len(invalid_rule_idx[j]), "\tFields:", invalid_rule_idx[j])
 			}
 		}
 	}
 
-	depart_multi := 1
+	var check_invalid [30]int
+	var matched_fields []int
+	for _, j := range desc_len_order {
+		for i := range fieldRules {
+			found := false
+			for _, v := range invalid_rule_idx[j] {
+				if v == i {
+					found = true
+				}
+			}
+			if !found {
+				index := findNum(matched_fields, i)
+				if index == -1 {
+					found = true
+					fieldRules[j].TicketIndex = i
+					matched_fields = append(matched_fields, i)
+					fmt.Println("-- Rule", fieldRules[j])
+				}
+			}
+		}
+
+		// validate ticket rules are correct
+		for i2 := range other_tickets {
+			v2 := other_tickets[i2][fieldRules[j].TicketIndex]
+			if (v2 >= fieldRules[j].Min1 && v2 <= fieldRules[j].Max1) || (v2 >= fieldRules[j].Min2 && v2 <= fieldRules[j].Max2) {
+				continue
+			} else {
+				check_invalid[j] = check_invalid[j] + 1
+			}
+		}
+	}
+	logging("Rule/Field match invalid tickets:", check_invalid[:len(fieldRules)-1], true)
+
+	depart_fields_multi := 1
 	for i := range fieldRules {
 		if strings.Contains(fieldRules[i].Name, "departure") {
 			v := your_ticket[fieldRules[i].TicketIndex]
 			if (v >= fieldRules[i].Min1 && v <= fieldRules[i].Max1) || (v >= fieldRules[i].Min2 && v <= fieldRules[i].Max2) {
-				fmt.Println(depart_multi)
-				fmt.Println(v)
-				depart_multi = depart_multi * v
+				depart_fields_multi = depart_fields_multi * v
 			} else {
 				fmt.Println("ERRORS")
 			}
 		}
 	}
-	logging("---Answer Part2---", "", true)
-	logging("ticket_invalid_rules", ticket_invalid_rules, true)
-	logging("desc_len_order", desc_len_order, true)
-	for i := range fieldRules {
-		logging("fieldRules[i]", fieldRules[i], true)
-	}
-	logging("depart_multi", depart_multi, true)
+	logging("\n---Answer Part2---", "", true)
+	logging("depart_fields_multi", depart_fields_multi, true)
 }
 
 func findNum(input []int, num int) int {
