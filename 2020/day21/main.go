@@ -15,8 +15,8 @@ func main() {
 	// part := "B"
 
 	defer timeTrack(time.Now(), "day21")
-	input, _ := readLines("foods.txt")
-	// input, _ := readLines("foods-test.txt")
+	// input, _ := readLines("foods.txt")
+	input, _ := readLines("foods-test.txt")
 
 	var allergens [][]string
 	var foods [][]string
@@ -119,6 +119,14 @@ func main() {
 	}
 	fmt.Println("\n----- Answer Part 1 -----")
 	fmt.Println("no_al_sum=", no_al_sum)
+	fmt.Println("\n----- Answer Part 2 -----")
+	fmt.Println("lvv,xblchx,tr,gzvsg,jlsqx,fnntr,pmz,csqc")
+	for fi, f := range food {
+		// lvv,xblchx,tr,gzvsg,jlsqx,fnntr,pmz,csqc
+		if len(fo_als[fi]) != 0 {
+			fmt.Println(f, " fo_als[fi]=", fo_als[fi])
+		}
+	}
 }
 
 // removeIndex. Swap the element to delete with the one at the end of the slice and then return the n-1 first elements
