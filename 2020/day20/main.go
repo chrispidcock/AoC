@@ -17,8 +17,8 @@ import (
 
 type tile struct {
 	ID       int
-	Sides    [][]int // [[Top][Right][Bottom][Left]]
-	Centre   [][]int8
+	Sides    [][]uint8 // [[Top][Right][Bottom][Left]]
+	Centre   [][]uint8
 	SMatched []int
 	IDMatch  []int // [Top][Right][Bottom][Left]
 	Rotation int
@@ -36,21 +36,11 @@ func main() {
 	var side_len int
 	var tiles []tile
 	var cur_tile tile
-	pix_cnt := 0
-	pix_cnt_added := 0
 	for i := range input {
 		_, mod := divMod(i, side_len+2)
 		if i == 0 || mod == 0 {
 			if i != 0 {
 				tiles = append(tiles, cur_tile)
-				for i := range cur_tile.Sides {
-					pix_cnt_added = pix_cnt_added + len(cur_tile.Sides[i])
-				}
-				if pix_cnt_added != pix_cnt {
-					fmt.Println("\nERROR: pix_cnt_added != pix_cnt", pix_cnt_added, "!=", pix_cnt)
-				}
-				pix_cnt = 0
-				pix_cnt_added = 0
 			}
 			cur_tile = tile{}
 			id, err := getID(input[i])
@@ -62,69 +52,85 @@ func main() {
 			}
 		}
 		if mod > 0 {
-			var pix []int
+			var pix []uint8
 			s := strings.Split(input[i], "")
 			side_len = len(s)
-			pix = getNonEmptyPix(s, true)
+			pix = getPixVal(s)
 			if mod == 1 {
 				cur_tile.Sides = append(cur_tile.Sides, pix)
-				cur_tile.Sides = append(cur_tile.Sides, make([]int, 0, side_len))
-				cur_tile.Sides = append(cur_tile.Sides, make([]int, 0, side_len))
-				cur_tile.Sides = append(cur_tile.Sides, make([]int, 0, side_len))
+				cur_tile.Sides = append(cur_tile.Sides, make([]uint8, side_len, side_len))
+				cur_tile.Sides = append(cur_tile.Sides, make([]uint8, side_len, side_len))
+				cur_tile.Sides = append(cur_tile.Sides, make([]uint8, side_len, side_len))
 				cur_tile.IDMatch = make([]int, 4)
 			} else if mod == side_len {
-				for i := range pix {
-					cur_tile.Sides[2] = append(cur_tile.Sides[2], side_len-1-pix[i])
+				for x := range pix {
+					cur_tile.Sides[2][len(pix)-1-x] = pix[x]
 				}
-			} else {
 			}
 			if len(pix) > 0 {
-				pix_cnt = pix_cnt + len(pix)
-				if pix[0] == 0 {
-					cur_tile.Sides[3] = append(cur_tile.Sides[3], side_len-mod)
-				}
-				if pix[len(pix)-1] == side_len-1 {
-					fmt.Println(side_len - mod)
-					cur_tile.Sides[1] = append(cur_tile.Sides[1], mod-1)
-				}
+				cur_tile.Sides[3][side_len-mod] = pix[0]
+				cur_tile.Sides[1][mod-1] = pix[len(pix)-1]
 			}
 			if mod > 1 && mod < side_len {
-				cur_tile.Centre = append(cur_tile.Centre, make([]int8, 0))
-				for idx := 1; idx < side_len-1; idx++ {
-					found := false
-					for j := range pix {
-						if pix[j] == idx {
-							found = true
-							cur_tile.Centre[len(cur_tile.Centre)-1] = append(cur_tile.Centre[len(cur_tile.Centre)-1], 1)
-							pix_cnt_added = pix_cnt_added + 1
-						}
-					}
-					if !found {
-						cur_tile.Centre[len(cur_tile.Centre)-1] = append(cur_tile.Centre[len(cur_tile.Centre)-1], 0)
-					}
-				}
+				cur_tile.Centre = append(cur_tile.Centre, pix[1:side_len-1])
 			}
 		}
 		if i == len(input)-1 {
 			tiles = append(tiles, cur_tile)
-			pix_cnt_added := (side_len - 2) * 2
-			for i := range cur_tile.Sides {
-				pix_cnt_added = pix_cnt_added + len(cur_tile.Sides[i])
-			}
-			if pix_cnt_added != pix_cnt {
-				fmt.Println("\nERROR: pix_cnt_added != pix_cnt", pix_cnt_added, "!=", pix_cnt)
-			}
-			pix_cnt = 0
-			pix_cnt_added = 0
 		}
 	}
 
 	fmt.Println("tile side_len=", side_len)
 	for i := range tiles {
-		fmt.Println(tiles[i])
+		fmt.Println("\n", tiles[i].ID)
+		for s := range tiles[i].Sides {
+			fmt.Println(tiles[i].Sides[s])
+		}
+	}
+	tiles = findAdjacent(tiles, side_len)
+	for i := range tiles {
+		fmt.Println(tiles[i].IDMatch)
 	}
 
-	tiles = findAdjacent(tiles, side_len)
+	tile_cnt := len(tiles)
+	image_size_f := math.Sqrt(float64(tile_cnt))
+	image_size := int(image_size_f)
+
+	len_2_t := 0
+	len_3_t := 0
+	len_4_t := 0
+	fmt.Println("tile side_len=", side_len)
+	for i := range tiles {
+		matches := 0
+		for j := range tiles[i].IDMatch {
+			if tiles[i].IDMatch[j] != 0 {
+				matches = matches + 1
+			}
+		}
+		if matches == 2 {
+			len_2_t = len_2_t + 1
+		} else if matches == 3 {
+			len_3_t = len_3_t + 1
+		} else if matches == 4 {
+			len_4_t = len_4_t + 1
+		} else {
+			fmt.Println("INCORRECT MATCHES", tiles[i])
+			panic("INCORRECT MATCHES")
+		}
+	}
+	fmt.Println("** len_2_t=", len_2_t)
+	fmt.Println("** len_3_t=", len_3_t)
+	fmt.Println("** len_4_t=", len_4_t)
+	if len_2_t != 4 {
+		fmt.Println("** len_2_t=", len_2_t)
+		panic("INCORRECT MATCH COUNT")
+	} else if len_3_t != 4*(image_size-2) {
+		fmt.Println("** len_3_t=", len_3_t)
+		panic("INCORRECT MATCH COUNT")
+	} else if len_4_t != (image_size-2)*(image_size-2) {
+		fmt.Println("** len_4_t=", len_4_t)
+		panic("INCORRECT MATCH COUNT")
+	}
 
 	corner_multi := 1
 	corner_cnt := 0
@@ -143,21 +149,22 @@ func main() {
 	fmt.Println("\n------ Working Part 2 ------")
 
 	if part == "B" {
-		tile_cnt := len(tiles)
-		image_size_f := math.Sqrt(float64(tile_cnt))
-		image_size := int(image_size_f)
 		fmt.Println("tile_cnt=", tile_cnt)
 		fmt.Println("image_size=", image_size)
 		pos_m := alignTiles(tiles, side_len, image_size, tile_cnt)
 		for i := range pos_m {
 			fmt.Println(pos_m[i])
 		}
+		valid := validateJoin(tiles, pos_m)
+		if valid != 0 {
+			// return
+		}
 
 		// Sea Monster
-		var s_m [3][20]int8
-		s_m[0] = [...]int8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0}
-		s_m[1] = [...]int8{1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1}
-		s_m[2] = [...]int8{0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0}
+		var s_m [3][20]uint8
+		s_m[0] = [...]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0}
+		s_m[1] = [...]uint8{1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1}
+		s_m[2] = [...]uint8{0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0}
 		s_m_i := 0
 		for i := range s_m {
 			for j := range s_m[i] {
@@ -167,10 +174,10 @@ func main() {
 			}
 		}
 
-		var f_map [][]int8
+		var f_map [][]uint8
 
 		for i := 0; i < image_size*(side_len-2); i++ {
-			f_map = append(f_map, make([]int8, 0))
+			f_map = append(f_map, make([]uint8, 0))
 		}
 
 		for i := range pos_m {
@@ -256,7 +263,7 @@ func main() {
 	}
 }
 
-func printMap(f_map [][]int8) {
+func printMap(f_map [][]uint8) {
 	for i := range f_map {
 		fmt.Print("\n")
 		for j := range f_map[i] {
@@ -281,25 +288,28 @@ func findAdjacent(tiles []tile, side_len int) []tile {
 			}
 			for si := range tiles[i].Sides {
 				for sj := range tiles[j].Sides {
-					s1 := tiles[i].Sides[si]
-					var s2 []int
-					for x := range tiles[j].Sides[sj] {
-						s2 = append(s2, side_len-1-tiles[j].Sides[sj][x])
+					s11 := tiles[i].Sides[si]
+					var s12 []uint8
+					for x := len(tiles[i].Sides[si]) - 1; x >= 0; x-- {
+						s12 = append(s12, tiles[i].Sides[si][x])
 					}
-					if len(s1) != len(s2) {
+					s2 := tiles[j].Sides[sj]
+
+					if len(s11) != len(s2) {
 						continue
 					}
+
 					match1 := true
 					match2 := true
-					if len(s1) > 0 && 0 < len(s2) {
-						for ii := range s1 {
-							if s1[ii] != s2[ii] {
+					if len(s11) > 0 && 0 < len(s2) {
+						for ii := range s11 {
+							if s11[ii] != s2[ii] {
 								match1 = false
 								break
 							}
 						}
-						for ii := range s1 {
-							if s1[ii] != Abs(s2[len(s2)-1-ii]-side_len+1) {
+						for ii := range s12 {
+							if s12[ii] != s2[ii] {
 								match2 = false
 								break
 							}
@@ -309,14 +319,12 @@ func findAdjacent(tiles []tile, side_len int) []tile {
 						match2 = false
 					}
 					if match1 {
-						tiles[i].SMatched = append(tiles[i].SMatched, si)
-						tiles[i].IDMatch[si] = tiles[j].ID
-						fmt.Println(tiles[i].ID, "match", tiles[j].ID, "on", s1, "==", s2)
-					}
-					if match2 {
 						tiles[i].SMatched = append(tiles[i].SMatched, -si)
 						tiles[i].IDMatch[si] = -tiles[j].ID
-						fmt.Println(tiles[i].ID, "match", tiles[j].ID, "on", s1, "==", s2)
+					}
+					if match2 {
+						tiles[i].SMatched = append(tiles[i].SMatched, si)
+						tiles[i].IDMatch[si] = tiles[j].ID
 					}
 				}
 			}
@@ -344,26 +352,38 @@ Arrange:
 		for y := range pos_m {
 		Next:
 			for x := range pos_m[y] {
+				var t int
+				var b []int
+				if y == 0 {
+					b = append(b, 0)
+				}
+				if y == len(pos_m)-1 {
+					b = append(b, 2)
+				}
+				if x == 0 {
+					b = append(b, 3)
+				}
+				if x == len(pos_m)-1 {
+					b = append(b, 1)
+				}
 				cor_xy[0] = x
 				cor_xy[1] = y
-				fmt.Println("\n", pos_m, "\n")
-				fmt.Println(x)
-				fmt.Println(y)
-				fmt.Println("corner", corner)
-				fmt.Println("side", side)
+				for i := range pos_m {
+					fmt.Println(pos_m[i])
+				}
+				fmt.Println("(x y)", x, y)
 				if cor_xy[0] == 0 && cor_xy[1] == 0 {
-
 				} else if corner {
-					t := getCompareTile(&tiles, pos_m, x-1, 0)
+					t = getCompareTile(&tiles, pos_m, x-1, 0)
 					last_tile = &tiles[t]
 				} else if side {
-					t := getCompareTile(&tiles, pos_m, x-1, y)
+					t = getCompareTile(&tiles, pos_m, x-1, y)
 					last_tile = &tiles[t]
 				} else {
-					t := getCompareTile(&tiles, pos_m, x, y-1)
+					t = getCompareTile(&tiles, pos_m, x, y-1)
 					last_tile = &tiles[t]
 				}
-				fmt.Println("\nlast_tile=", last_tile)
+				fmt.Println("\nlast_tile=", tiles[t].ID, ":", tiles[t].IDMatch)
 
 				found := false
 				if pos_m[y][x] != 0 {
@@ -381,34 +401,43 @@ Arrange:
 						continue
 					}
 					if corner && len(tiles[i].SMatched) == 2 && len(tiles[i].XY) == 0 {
-						min_side := 3
-						max_side := 0
-						for sm := range tiles[i].SMatched {
-							if tiles[i].SMatched[sm] < min_side {
-								min_side = tiles[i].SMatched[sm]
-							}
-							if tiles[i].SMatched[sm] > max_side {
-								max_side = tiles[i].SMatched[sm]
-							}
-						}
-						d := Abs(max_side - min_side)
 
 						if cor_xy[0] == 0 && cor_xy[1] == 0 {
-							fmt.Println("tiles[i]=", tiles[i])
+							max_match := 0
+							for z := range tiles[i].IDMatch {
+								if max_match < tiles[i].IDMatch[z] {
+									max_match = tiles[i].IDMatch[z]
+								}
+							}
+							if max_match == 0 {
+								tileTranspose(&tiles[i])
+							}
+							min_side := 3
+							max_side := 0
+							for sm := range tiles[i].IDMatch {
+								if tiles[i].IDMatch[sm] == 0 {
+									continue
+								}
+								if sm < min_side {
+									min_side = sm
+								}
+								if sm > max_side {
+									max_side = sm
+								}
+							}
+							d := Abs(max_side - min_side)
+							fmt.Println("tiles[i]=", tiles[i].ID, ":", tiles[i].IDMatch)
 							if d == 3 {
 								tileRotate(&tiles[i], max_side, 1)
 							} else {
 								tileRotate(&tiles[i], min_side, 1)
 							}
+
 							found = true
 							side = true
-							fmt.Println("tiles[i]=", tiles[i])
+							fmt.Println("tiles[i]=", tiles[i].ID, ":", tiles[i].IDMatch)
 						} else {
-							if d == 1 {
-								found = findTileJoin(last_tile, &tiles[i], min_side)
-							} else {
-								found = findTileJoin(last_tile, &tiles[i], max_side)
-							}
+							found = findTileJoin(last_tile, &tiles[i], 1, b, pos_m, y, x)
 							if found {
 								side = false
 								corner = false
@@ -425,7 +454,7 @@ Arrange:
 						}
 
 					} else if side && len(tiles[i].SMatched) == 3 && len(tiles[i].XY) == 0 {
-						found = findTileJoin(last_tile, &tiles[i], 1)
+						found = findTileJoin(last_tile, &tiles[i], 1, b, pos_m, y, x)
 						if !found {
 							continue
 						} else {
@@ -451,11 +480,11 @@ Arrange:
 						}
 
 					} else if !corner && !side && len(tiles[i].XY) == 0 {
-						found = findTileJoin(last_tile, &tiles[i], 2)
+						found = findTileJoin(last_tile, &tiles[i], 2, b, pos_m, y, x)
 						if !found {
 							continue
 						} else {
-							fmt.Println("\n=========findTileJoin=", &tiles[i])
+							fmt.Println("\n=========findTileJoin=", tiles[i].ID, ":", tiles[i].IDMatch)
 							tiles[i].XY = cor_xy
 							pos_m[y][x] = tiles[i].ID
 							arranged = arranged + 1
@@ -486,41 +515,127 @@ func getCompareTile(tiles *[]tile, m [][]int, x int, y int) int {
 	return -1
 }
 
-// findTileJoin finds the corresponding side join and rotates/transpose to the correct orientation
-func findTileJoin(lt *tile, tm *tile, side int) bool {
-	fmt.Println("--lt", lt)
-	fmt.Println("--side", side)
-	fmt.Println("--tm", tm)
-	fmt.Println("lt.IDMatch[side]", lt.IDMatch[side])
-	fmt.Println("tm.ID", tm.ID)
-	if Abs(lt.IDMatch[side]) == tm.ID {
-		for idx := range tm.IDMatch {
-			_, req_idx := divMod(side+2, 4)
-			if tm.IDMatch[idx] == lt.ID {
-				tileRotate(tm, idx, req_idx)
-				fmt.Println("++++++++++++++++findTileJoin", Abs(lt.IDMatch[side]), "==", tm.ID)
-				return true
+func validateJoin(ts []tile, m [][]int) int {
+	inv_cnt := 0
+	for i := range m {
+		for j := range m[i] {
+			for t := range ts {
+				inv_cnt = validatePos(ts[t], m, i, j, inv_cnt)
 			}
-			if tm.IDMatch[idx] == -lt.ID {
+		}
+	}
+	return inv_cnt
+}
+
+func validatePos(ts tile, m [][]int, i int, j int, inv_cnt int) int {
+	if ts.ID == m[i][j] {
+		if i == 0 && ts.IDMatch[0] != 0 {
+			fmt.Println("i == 0 && ts.IDMatch[0] != 0", ts.IDMatch[0], "!=", 0, "i=", i, "j=", j)
+			inv_cnt = inv_cnt + 1
+		}
+		if i == len(m)-1 && ts.IDMatch[2] != 0 {
+			fmt.Println("i == len(m)-1 && ts.IDMatch[2] != 0", ts.IDMatch[1], "!=", 0, "i=", i, "j=", j)
+			inv_cnt = inv_cnt + 1
+		}
+		if j == 0 && ts.IDMatch[3] != 0 {
+			fmt.Println("j == 0 && ts.IDMatch[3] != 0", ts.IDMatch[3], "!=", 0, "i=", i, "j=", j)
+			inv_cnt = inv_cnt + 1
+		}
+		if j == len(m)-1 && ts.IDMatch[1] != 0 {
+			fmt.Println("j == len(m)-1 && ts.IDMatch[1] != 0", ts.IDMatch[2], "!=", 0, "i=", i, "j=", j)
+			inv_cnt = inv_cnt + 1
+		}
+		for x := range ts.IDMatch {
+			if ts.IDMatch[x] == 0 {
+				continue
+			} else if x == 0 && i > 0 {
+				if Abs(ts.IDMatch[x]) != Abs(m[i-1][j]) {
+					fmt.Println("ts.IDMatch[x] != m[i-1][j]", ts.IDMatch[x], "!=", m[i-1][j])
+					inv_cnt = inv_cnt + 1
+				}
+			} else if x == 1 && j < len(m)-1 {
+				if Abs(ts.IDMatch[x]) != Abs(m[i][j+1]) {
+					fmt.Println("ts.IDMatch[x] != m[i][j+1]", ts.IDMatch[x], "!=", m[i][j+1])
+					inv_cnt = inv_cnt + 1
+				}
+			} else if x == 2 && i < len(m)-1 {
+				if Abs(ts.IDMatch[x]) != Abs(m[i+1][j]) {
+					fmt.Println("ts.IDMatch[x] != m[i+1][j]", ts.IDMatch[x], "!=", m[i+1][j])
+					inv_cnt = inv_cnt + 1
+				}
+			} else if x == 3 && j > 0 {
+				if Abs(ts.IDMatch[x]) != Abs(m[i][j-1]) {
+					fmt.Println("ts.IDMatch[x] != m[i][j-1]", ts.IDMatch[x], "!=", m[i][j-1])
+					inv_cnt = inv_cnt + 1
+				}
+			}
+		}
+	}
+	return inv_cnt
+}
+
+// findTileJoin finds the corresponding side join and rotates/transpose to the correct orientation
+func findTileJoin(lt *tile, tm *tile, m_side int, o_side []int, pos_m [][]int, y int, x int) bool {
+	if Abs(lt.IDMatch[m_side]) == 0 {
+		fmt.Println("\nERROR: findTileJoin\n")
+		panic("\nERROR: findTileJoin\n")
+	}
+	if Abs(lt.IDMatch[m_side]) == Abs(tm.ID) {
+		for idx := range tm.IDMatch {
+			valid := true
+			flip := false
+			_, req_idx := divMod(m_side+2, 4)
+			if lt.IDMatch[m_side] > 0 && tm.IDMatch[idx] < 0 {
+				tm.IDMatch[idx] = Abs(tm.IDMatch[idx])
+			}
+			if Abs(tm.IDMatch[idx]) == lt.ID {
+				tileRotate(tm, idx, req_idx)
+				for _, v := range o_side {
+					if tm.IDMatch[v] != 0 {
+						fmt.Println("VALIDATE FAIL", tm.ID, ":", o_side, tm.IDMatch)
+						valid = false
+						flip = true
+					}
+				}
+				valid_cnt := validatePos(*tm, pos_m, y, x, 0)
+				if valid_cnt != 0 {
+					valid = false
+				}
+				if valid {
+					fmt.Println("++++++++++++++++findTileJoin", Abs(lt.IDMatch[m_side]), "==", tm.ID)
+					return true
+				}
+
+			}
+			if (tm.IDMatch[idx] == -lt.ID && valid) || flip {
+				valid = true
 				tileTranspose(tm)
-				lt.IDMatch[side] = Abs(lt.IDMatch[side])
 				for idx := range tm.IDMatch {
-					_, req_idx := divMod(side+2, 4)
-					if tm.IDMatch[idx] == lt.ID {
+					if Abs(tm.IDMatch[idx]) == lt.ID {
 						tileRotate(tm, idx, req_idx)
-						fmt.Println("++++++++++++++++findTileJoin", Abs(lt.IDMatch[side]), "==", tm.ID)
-						return true
+						for _, v := range o_side {
+							if tm.IDMatch[v] != 0 {
+								fmt.Println("VALIDATE FAIL", tm.ID, ":", o_side, tm.IDMatch)
+								valid = false
+							}
+						}
+						if valid {
+							fmt.Println("^^^^^^^^^^^^^^^^^^^^^findTileJoin", Abs(lt.IDMatch[m_side]), "==", tm.ID, " >>", tm)
+							return true
+						}
 					}
 				}
 			}
 		}
 	}
-	fmt.Println("!!!!!!!!!!!!!!!!!!!!findTileJoin", Abs(lt.IDMatch[side]), "!=", tm.ID)
+	fmt.Println("!!!!!!!!!!!!!!!!!!!!findTileJoin", lt.IDMatch[m_side], "!=", tm.ID, " >>", tm)
 	return false
 }
 
 // titleRotate rotates the tile to the required orientation
 func tileRotate(t *tile, s int, m int) {
+	// var arr [4]int
+	// copy(arr[:], t.IDMatch)
 	change := 0
 	test := s
 	for test != m {
@@ -533,62 +648,68 @@ func tileRotate(t *tile, s int, m int) {
 		arr, pix := rotate(t.IDMatch, t.Centre, change)
 		copy(t.IDMatch, arr[:])
 		copy(t.Centre, pix)
+		t.Rotation = change
 	}
-	t.Rotation = change
 	return
 }
 
-func rotate(t []int, pix [][]int8, r int) ([4]int, [][]int8) {
+func rotate(t []int, pix [][]uint8, change int) ([4]int, [][]uint8) {
 	var arr [4]int
+	fmt.Println("rotation:", change)
 	for i := range t {
-		_, new_index := divMod(i+r, 4)
+		_, new_index := divMod(i+change, 4)
 		arr[new_index] = t[i]
 	}
 
-	var t_copy [][]int8
+	var t_copy [][]uint8
 	for i := range pix {
-		t_copy = append(t_copy, make([]int8, 0))
+		t_copy = append(t_copy, make([]uint8, 0))
 		for j := range pix[i] {
 			t_copy[i] = append(t_copy[i], pix[i][j])
 		}
 	}
 
-	if r == 1 {
+	if change == 1 {
 		for i := range t_copy {
 			for j := range t_copy[i] {
 				pix[j][len(t_copy)-1-i] = t_copy[i][j]
 			}
 		}
-	} else if r == 2 {
+	} else if change == 2 {
 		for i := range t_copy {
 			for j := range t_copy[i] {
 				pix[len(t_copy)-1-i][len(t_copy)-1-j] = t_copy[i][j]
 			}
 		}
-	} else if r == 3 {
+	} else if change == 3 {
 		for i := range t_copy {
 			for j := range t_copy[i] {
 				pix[len(t_copy)-1-j][i] = t_copy[i][j]
 			}
 		}
+	} else {
+		fmt.Println("\nERROR\n")
 	}
-
 	return arr, pix
 }
 
 // tileTranspose transpose the tile
 func tileTranspose(t *tile) {
+	fmt.Println("tileTranspose--t", t.ID, ":", t.IDMatch)
 	arr, pix := transpose(t.IDMatch, t.Centre)
 	copy(t.IDMatch, arr[:])
 	copy(t.Centre, pix)
+	t.Flip = true
+
+	fmt.Println("tileTranspose--t", t.ID, ":", t.IDMatch)
 	return
 }
-func transpose(t []int, pix [][]int8) ([4]int, [][]int8) {
-	var t_copy [][]int8
+func transpose(t []int, pix [][]uint8) ([4]int, [][]uint8) {
+	var t_copy [][]uint8
 	var arr [4]int
 
 	for i := range pix {
-		t_copy = append(t_copy, make([]int8, 0))
+		t_copy = append(t_copy, make([]uint8, 0))
 		for j := range pix[i] {
 			t_copy[i] = append(t_copy[i], pix[i][j])
 		}
@@ -600,22 +721,22 @@ func transpose(t []int, pix [][]int8) ([4]int, [][]int8) {
 		}
 	}
 
-	for i := range t {
-		arr[i] = Abs(t[len(arr)-1-i])
+	if len(t) > 0 {
+		arr[0] = -t[3]
+		arr[1] = -t[2]
+		arr[2] = -t[1]
+		arr[3] = -t[0]
 	}
-
-	// t.Flip = true
 	return arr, pix
 }
 
-func getNonEmptyPix(s []string, full bool) []int {
-	var results []int
+func getPixVal(s []string) []uint8 {
+	var results []uint8
 	for i := range s {
-		if !full && i > 0 && i < len(s)-1 {
-			continue
-		}
 		if s[i] == "#" {
-			results = append(results, i)
+			results = append(results, 1)
+		} else if s[i] == "." {
+			results = append(results, 0)
 		}
 	}
 	return results
