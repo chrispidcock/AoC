@@ -20,7 +20,7 @@ type tile struct {
 	Sides    [][]uint8 // [[Top][Right][Bottom][Left]]
 	Centre   [][]uint8
 	SMatched []int
-	IDMatch  []int // [Top][Right][Bottom][Left]
+	IDMatch  []int // [Top Right Bottom Left]
 	Rotation int
 	Flip     bool
 	XY       []int
