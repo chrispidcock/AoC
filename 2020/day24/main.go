@@ -5,31 +5,90 @@ package main
 import (
 	"bufio"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 )
 
-type Game struct {
-	rounds []Round
-}
-
-type Round struct {
-	players [2]Player
-}
-
-type Player struct {
-	hand []int
+type tile struct {
+	N     int
+	E     int
+	Black bool
 }
 
 func main() {
 	// part := "B"
 
 	defer timeTrack(time.Now(), "day24")
-	// input, _ := readLines("tileflip.txt")
-	input, _ := readLines("tileflip-test.txt")
+	// input, _ := readLines("tileflip-test.txt")
+	input, _ := readLines("tileflip.txt")
+
+	// {{e},{se},{sw},{w},{nw},{ne}}
+	var grid = [][]int{{0, 2}, {-1, 1}, {-1, -1}, {0, -2}, {1, -1}, {1, 1}}
+	fmt.Println(grid)
+	var tiles []tile
+
+	for i := range input {
+		idx := 0
+		var cur_t [2]int
+		s := strings.Split(input[i], "")
+		for idx < len(s) {
+			switch s[idx] {
+			case "s":
+				if s[idx+1] == "e" {
+					cur_t[0] = cur_t[0] - 1
+					cur_t[1] = cur_t[1] + 1
+				} else {
+					cur_t[0] = cur_t[0] - 1
+					cur_t[1] = cur_t[1] - 1
+				}
+				idx = idx + 1
+			case "n":
+				if s[idx+1] == "e" {
+					cur_t[0] = cur_t[0] + 1
+					cur_t[1] = cur_t[1] + 1
+				} else {
+					cur_t[0] = cur_t[0] + 1
+					cur_t[1] = cur_t[1] - 1
+				}
+				idx = idx + 1
+			case "e":
+				cur_t[1] = cur_t[1] + 2
+			case "w":
+				cur_t[1] = cur_t[1] - 2
+			}
+			idx = idx + 1
+		}
+		found := false
+		for ti, t := range tiles {
+			if t.N == cur_t[0] && t.E == cur_t[1] {
+				if t.Black {
+					tiles[ti].Black = false
+				} else if !t.Black {
+					tiles[ti].Black = true
+				}
+				found = true
+				break
+			}
+		}
+		if !found {
+			tiles = append(tiles, tile{cur_t[0], cur_t[1], true})
+		}
+	}
+	black_tiles := 0
+	for _, t := range tiles {
+		fmt.Println(t)
+		if t.Black {
+			black_tiles = black_tiles + 1
+		}
+	}
+
+	fmt.Println("\n--- Answer Part 1 ---")
+	fmt.Println("black_tiles=", black_tiles)
 }
 
 func getInt(s string) (int, error) {
@@ -49,28 +108,6 @@ func getInt(s string) (int, error) {
 		}
 	}
 	return v, errors.New("No Integers")
-}
-
-func threeCups(s []int, idx int) ([]int, []int, int) {
-	var t [3]int
-	var i = idx
-
-	for idx {
-
-	}
-
-	return s, t, idx
-}
-
-func destCup(s []int, idx int) ([]int, []int) {
-	var t [3]int
-	var i = idx
-
-	for i < len(s) {
-
-	}
-
-	return s, t
 }
 
 // removeIndex. Swap the element to delete with the one at the end of the slice and then return the n-1 first elements
