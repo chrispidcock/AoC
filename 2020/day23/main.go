@@ -14,23 +14,11 @@ import (
 	"time"
 )
 
-type Game struct {
-	rounds []Round
-}
-
-type Round struct {
-	players [2]Player
-}
-
-type Player struct {
-	hand []int
-}
-
 func main() {
-	// part := "B"
+	part := "B"
 
+	start := time.Now()
 	defer timeTrack(time.Now(), "day23")
-	// input, _ := readLines("hands.txt")
 	input := "562893147"
 	// input := "389125467"
 	s := strings.Split(input, "")
@@ -39,61 +27,73 @@ func main() {
 		v, _ := getInt(s[i])
 		cups = append(cups, v)
 	}
+
+	if part == "B" {
+		iterations := 10000000
+		for i := 10; i <= 1000000; i++ {
+			cups = append(cups, i)
+		}
+	} else {
+		iterations := 100
+	}
+
 	var dest int
 	var c3 []int
 	c_cnt := len(cups)
+	fmt.Println("c_cnt=", c_cnt)
 
-	iterations := 100
 	it := 0
 	idx := -1
 	for it < iterations {
 		it = it + 1
-		fmt.Println("\n-- Iteration:", it)
-		fmt.Println("cups START:", cups)
+		_, mod := divMod(it, 1000)
+		if mod == 0 {
+			t := time.Now()
+			fmt.Println("it=", it, "  ", (it/iterations)*100, "%", "  ", t.Sub(start))
+		}
 		// Select next index cup
 		if idx == len(cups)-1 {
 			idx = 0
 		} else {
 			idx = idx + 1
 		}
-		fmt.Println("idx:", idx)
+
 		// remove 3 cups after selected cup
 		cups, c3, idx = threeCups(cups, idx)
-		fmt.Println("cups-c3:", cups)
-		fmt.Println("c3:", c3)
-		fmt.Println("idx:", idx)
 
 		// find dest cup
 		dest = destCup(cups, idx, c_cnt)
-		fmt.Println("dest:", dest)
 		// place 3 removed cups after dest cup
 		cups = appendIdxSOrdered(cups, dest, c3)
-		fmt.Println("cups END:", cups)
 		if dest < idx {
 			_, idx = divMod(idx+3, c_cnt)
 		}
 		// repeat on next index cup
-		fmt.Println("idx:", idx)
 	}
 
-	fmt.Println("--- Answer Part 1 ---")
-	ans1 := ""
 	var idx_1 int
-
 	for i := range cups {
 		if cups[i] == 1 {
 			idx_1 = i + 1
 			break
 		}
 	}
-	for len(ans1) < c_cnt {
-		if idx_1 == c_cnt {
-			idx_1 = 0
+	if part == "A" {
+		fmt.Println("--- Answer Part 1 ---")
+		ans1 := ""
+		for len(ans1) < c_cnt {
+			if idx_1 == c_cnt {
+				idx_1 = 0
+			}
+			ans1 = ans1 + fmt.Sprint(cups[idx_1])
+			idx_1 = idx_1 + 1
 		}
-		ans1 = ans1 + fmt.Sprint(cups[idx_1])
-		idx_1 = idx_1 + 1
+		fmt.Println("ans1:", ans1)
 	}
-	fmt.Println("ans1:", ans1)
+	if part == "B" {
+		fmt.Println("--- Answer Part 2 ---")
+		fmt.Println(cups[idx_1], "*", cups[idx_1+1], "=", cups[idx_1]*cups[idx_1+1])
+	}
 }
 
 func threeCups(s []int, idx int) ([]int, []int, int) {
@@ -116,8 +116,6 @@ func threeCups(s []int, idx int) ([]int, []int, int) {
 
 func destCup(s []int, idx int, c_cnt int) int {
 	var dest = s[idx]
-	fmt.Println("s", s)
-	fmt.Println("c_cnt", c_cnt)
 	found := false
 	for !found {
 		if dest == 1 {
@@ -125,7 +123,7 @@ func destCup(s []int, idx int, c_cnt int) int {
 		} else {
 			dest = dest - 1
 		}
-		fmt.Println("destCup", dest)
+
 		for j := range s {
 			if s[j] == dest {
 				found = true
@@ -133,7 +131,6 @@ func destCup(s []int, idx int, c_cnt int) int {
 			}
 		}
 	}
-	fmt.Println("HIT")
 	return dest
 }
 
