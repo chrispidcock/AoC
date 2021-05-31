@@ -21,15 +21,15 @@ type tile struct {
 }
 
 func main() {
-	// part := "B"
+	part := "B"
 
 	defer timeTrack(time.Now(), "day24")
 	// input, _ := readLines("tileflip-test.txt")
 	input, _ := readLines("tileflip.txt")
 
 	// {{e},{se},{sw},{w},{nw},{ne}}
-	var grid = [][]int{{0, 2}, {-1, 1}, {-1, -1}, {0, -2}, {1, -1}, {1, 1}}
-	fmt.Println(grid)
+	var adj = [][]int{{0, 2}, {-1, 1}, {-1, -1}, {0, -2}, {1, -1}, {1, 1}}
+	fmt.Println(adj)
 	var tiles []tile
 
 	for i := range input {
@@ -89,6 +89,106 @@ func main() {
 
 	fmt.Println("\n--- Answer Part 1 ---")
 	fmt.Println("black_tiles=", black_tiles)
+
+	if part == "B" {
+		fmt.Println("\n--- Answer Part 2 ---")
+		days := 100
+		for d := 1; d <= days; d++ {
+			var update_tiles []tile
+			black_tiles = 0
+			tile_cnt := len(tiles)
+
+			for _, t := range tiles {
+				var n_found []int
+
+				for i, tn := range tiles {
+					if t.N == tn.N && t.E == tn.E {
+						continue
+					}
+					if (Abs(t.N-tn.N) == 1 && Abs(t.E-tn.E) == 1) || (Abs(t.N-tn.N) == 0 && Abs(t.E-tn.E) == 2) {
+						n_found = append(n_found, i)
+					}
+				}
+
+				if len(n_found) > 6 {
+					fmt.Println("n_found is greater than 6=", n_found)
+					panic("n_found is greater than 6")
+				}
+
+				adj_black := 0
+				for _, a := range adj {
+					new_tile := true
+					for _, j := range n_found {
+						if tiles[j].N+a[0] == t.N && tiles[j].E+a[1] == t.E {
+							new_tile = false
+							if tiles[j].Black {
+								adj_black = adj_black + 1
+							}
+							break
+						}
+					}
+					if new_tile {
+						tiles = append(tiles, tile{t.N - a[0], t.E - a[1], false})
+					}
+				}
+
+				if adj_black == 2 && !t.Black {
+					update_tiles = append(update_tiles, tile{t.N, t.E, true})
+				} else if (adj_black == 0 || adj_black > 2) && t.Black {
+					update_tiles = append(update_tiles, tile{t.N, t.E, false})
+				}
+			}
+
+			for _, t := range tiles[tile_cnt:] {
+				var n_found []int
+				for i, tn := range tiles {
+					if t.N == tn.N && t.E == tn.E {
+						continue
+					}
+					if (Abs(t.N-tn.N) == 1 && Abs(t.E-tn.E) == 1) || (Abs(t.N-tn.N) == 0 && Abs(t.E-tn.E) == 2) {
+						n_found = append(n_found, i)
+					}
+				}
+
+				if len(n_found) > 6 {
+					fmt.Println("n_found is greater than 6=", n_found)
+					panic("n_found is greater than 6")
+				}
+
+				adj_black := 0
+				for _, a := range adj {
+					for _, j := range n_found {
+						if tiles[j].N+a[0] == t.N && tiles[j].E+a[1] == t.E {
+							if tiles[j].Black {
+								adj_black = adj_black + 1
+							}
+							break
+						}
+					}
+				}
+
+				if adj_black == 2 && !t.Black {
+					update_tiles = append(update_tiles, tile{t.N, t.E, true})
+				} else if (adj_black == 0 || adj_black > 2) && t.Black {
+					update_tiles = append(update_tiles, tile{t.N, t.E, false})
+				}
+			}
+
+			for _, ut := range update_tiles {
+				for ti := range tiles {
+					if ut.N == tiles[ti].N && ut.E == tiles[ti].E {
+						tiles[ti].Black = ut.Black
+					}
+				}
+			}
+			for _, t := range tiles {
+				if t.Black {
+					black_tiles = black_tiles + 1
+				}
+			}
+			fmt.Println("Day", d, ":", black_tiles)
+		}
+	}
 }
 
 func getInt(s string) (int, error) {
